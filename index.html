@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title> TicketBoss Dashboard</title>
+  <style>
+    
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #ffffff; 
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-top: 30px;
+      letter-spacing: 1px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 25px 30px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 15px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #007bff;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    .reserve-btn { background: #007bff; }
+    .cancel-btn { background: #dc3545; }
+    .summary-btn { background: #28a745; }
+
+    pre {
+      background: #f6f6f6;
+      color: #111;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 14px;
+      overflow-x: auto;
+      border: 1px solid #ccc;
+    }
+
+    footer {
+      text-align: center;
+      color: #555;
+      margin: 40px 0 20px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .success {
+      color: #28a745;
+      font-weight: bold;
+    }
+
+    .error {
+      color: #dc3545;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>TicketBoss Event Management System</h1>
+
+  <div class="container">
+    
+    <div class="card">
+      <h2>Reserve Seats</h2>
+      <form id="reserveForm">
+        <label>Partner ID</label>
+        <input type="text" id="partnerId" placeholder="Enter Partner ID" required>
+
+        <label>Seats (1–10)</label>
+        <input type="number" id="seats" min="1" max="10" required>
+
+        <button class="reserve-btn" type="submit">Reserve Seats</button>
+      </form>
+    </div>
+
+    <!-- Cancel Card -->
+    <div class="card">
+      <h2>Cancel Reservation</h2>
+      <form id="cancelForm">
+        <label>Reservation ID</label>
+        <input type="text" id="reservationId" placeholder="Enter Reservation ID" required>
+        <button class="cancel-btn" type="submit">Cancel Reservation</button>
+      </form>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="card">
+      <h2>Event Summary</h2>
+      <button class="summary-btn" id="getSummary">View Current Summary</button>
+      <pre id="summaryOutput">Summary data will appear here...</pre>
+    </div>
+
+    <!-- Result Section -->
+    <div class="card">
+      <h2>Server Response</h2>
+      <pre id="result">Responses will appear here...</pre>
+    </div>
+  </div>
+
+  
+
+  <script>
+    const API_URL = "http://127.0.0.1:5000";
+
+    // Reserve Seats
+    document.getElementById("reserveForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const partnerId = document.getElementById("partnerId").value;
+      const seats = parseInt(document.getElementById("seats").value);
+
+      try {
+        const response = await fetch(`${API_URL}/reservations`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ partnerId, seats })
+        });
+        const data = await response.json();
+        document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+        document.getElementById("result").className = response.ok ? "success" : "error";
+      } catch (err) {
+        document.getElementById("result").textContent = " Error: " + err.message;
+      }
+    });
+
+    // Cancel Reservation
+    document.getElementById("cancelForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const reservationId = document.getElementById("reservationId").value;
+
+      try {
+        const response = await fetch(`${API_URL}/reservations/${reservationId}`, {
+          method: "DELETE"
+        });
+        if (response.status === 204) {
+          document.getElementById("result").textContent = " Reservation cancelled successfully.";
+          document.getElementById("result").className = "success";
+        } else {
+          const error = await response.json();
+          document.getElementById("result").textContent = JSON.stringify(error, null, 2);
+          document.getElementById("result").className = "error";
+        }
+      } catch (err) {
+        document.getElementById("result").textContent = " Error: " + err.message;
+      }
+    });
+
+    // Get Event Summary
+    document.getElementById("getSummary").addEventListener("click", async () => {
+      try {
+        const response = await fetch(`${API_URL}/reservations`);
+        const data = await response.json();
+        document.getElementById("summaryOutput").textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById("summaryOutput").textContent = " Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
